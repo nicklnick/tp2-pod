@@ -1,26 +1,37 @@
 package ar.edu.itba.pod.hazelcast.client;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.config.GroupConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-
 public class Client {
-    private static Logger logger = LoggerFactory.getLogger(Client.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 
     public static void main(String[] args) throws InterruptedException {
-        logger.info("tpe2-g1 Client Starting ...");
-        logger.info("grpc-com-patterns Client Starting ...");
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
-                .usePlaintext()
-                .build();
+        LOGGER.info("hz-config Client Starting ...");
 
-        try {
+        // Client config
+        final ClientConfig clientConfig = new ClientConfig();
 
-        } finally {
-            channel.shutdown().awaitTermination(10, TimeUnit.SECONDS);
-        }
+        // Group config
+        final GroupConfig groupConfig = new GroupConfig()
+                .setName(CredentialUtils.GROUP_NAME)
+                .setPassword(CredentialUtils.GROUP_PASSWORD);
+        clientConfig.setGroupConfig(groupConfig);
+
+        // Network config
+        final ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
+        final String[] addresses = { "192.168.1.51:5701", "169.254.157.198:5701" };
+        networkConfig.addAddress(addresses);
+        clientConfig.setNetworkConfig(networkConfig);
+
+        // Start the client
+        HazelcastClient.newHazelcastClient(clientConfig);
+
+        LOGGER.info("hz-config Client started");
     }
 }
