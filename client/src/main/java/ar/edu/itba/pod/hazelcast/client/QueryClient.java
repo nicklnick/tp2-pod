@@ -12,8 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-public abstract class QueryClient {
+public abstract class QueryClient<K, V> {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryClient.class);
 
     private final List<String> arguments = new ArrayList<>(List.of(
@@ -22,6 +23,9 @@ public abstract class QueryClient {
             ArgumentUtils.OUT_PATH,
             ArgumentUtils.CITY
     ));
+    private HazelcastInstance hazelcastInstance;
+
+
 
     public QueryClient(final List<String> arguments) {
         this.arguments.addAll(arguments);
@@ -30,16 +34,27 @@ public abstract class QueryClient {
             checkArguments();
 
             LOGGER.info("hz-config Client Starting ...");
-            final HazelcastInstance hazelcastInstance = startClient();
+            this.hazelcastInstance = startClient();
             LOGGER.info("hz-config Client started");
 
             LOGGER.info("Loading data ...");
-            loadData(hazelcastInstance, System.getProperty(ArgumentUtils.IN_PATH));
+            loadData(System.getProperty(ArgumentUtils.IN_PATH));
             LOGGER.info("Finished loading data ...");
 
             LOGGER.info("Executing query ...");
-            solveQuery(hazelcastInstance);
+            final Map<K, V> map = solveQuery();
             LOGGER.info("Query executed");
+
+            LOGGER.info("Writing results ...");
+            writeResults(map);
+            LOGGER.info("Results written");
+
+            LOGGER.info("Clearing data ...");
+            clearData();
+            LOGGER.info("Data cleared");
+
+            LOGGER.info("Exiting ...");
+            System.exit(0);
         } catch (IllegalArgumentException e) {
             // TODO: Better message
             LOGGER.error(e.getMessage());
@@ -69,9 +84,20 @@ public abstract class QueryClient {
         return HazelcastClient.newHazelcastClient(clientConfig);
     }
 
-    public abstract void loadData(HazelcastInstance hazelcastInstance, String path);
+    public HazelcastInstance getHazelcastInstance() {
+        if(hazelcastInstance == null)
+            throw new IllegalStateException("Hazelcast instance not initialized");
 
-    public abstract void solveQuery(HazelcastInstance hazelcastInstance);
+        return hazelcastInstance;
+    }
+
+    public abstract void loadData(String path);
+
+    public abstract Map<K, V> solveQuery();
+
+    public abstract void writeResults(Map<K, V> resultMap);
+
+    public abstract void clearData();
 
     private void checkArguments() throws IllegalArgumentException {
         for(String argument : arguments)
