@@ -20,48 +20,48 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class QueryOneClient extends QueryClient<Integer, Integer> {
+public class QueryOneClient extends QueryClient<String, Integer> {
     public QueryOneClient() {
         super(List.of());
     }
 
     public static void main(String[] args) {
-        QueryClient<Integer, Integer> client = new QueryOneClient();
+        QueryClient<String, Integer> client = new QueryOneClient();
     }
 
     @Override
     public void loadData(String dirPath) {
         // get infractionsXXX.csv and ticketsXXX.csv
-        final IMap<Integer, String> map = getHazelcastInstance().getMap(getCityData().getMapName());
-        final String infractions = String.join(FileUtils.DELIMITER, dirPath, getCityData().getInfractionsFile());
+        final IMap<Integer, String> infractions = getHazelcastInstance().getMap(getCityData().getMapName());
+        final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, getCityData().getInfractionsFile());
 
-        final MultiMap<Integer, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
+        final MultiMap<String, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
         final String tickets = String.join(FileUtils.DELIMITER, dirPath, getCityData().getTicketsFile());
 
         // read infractions and tickets
-        CsvFileReader.readRows(infractions, line -> {
+        CsvFileReader.readRows(infractionsFile, line -> {
             final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
-            map.put(infraction.getCode(), infraction.getDescription());
+            infractions.put(infraction.getCode(), infraction.getDescription());
         });
 
         CsvFileReader.readRows(tickets, line -> {
             final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
-            mm.put(ticket.getCode(), ticket);
+            mm.put(infractions.get(ticket.getCode()), ticket);
         });
     }
 
     @SuppressWarnings("deprecation")
     @Override
-    public Map<Integer, Integer> solveQuery() {
-        final MultiMap<Integer, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
+    public Map<String, Integer> solveQuery() {
+        final MultiMap<String, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
 
         final JobTracker jobTracker = getHazelcastInstance().getJobTracker(CredentialUtils.GROUP_NAME);
 
-        final KeyValueSource<Integer, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
+        final KeyValueSource<String, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
 
-        final Job<Integer, TicketNyc> job = jobTracker.newJob(source);
+        final Job<String, TicketNyc> job = jobTracker.newJob(source);
 
-        final ICompletableFuture<Map<Integer, Integer>> future = job
+        final ICompletableFuture<Map<String, Integer>> future = job
                 .mapper(new InfractionCodeMapper())
                 .combiner(new InfractionAmountCombinerFactory())
                 .reducer(new InfractionAmountReducerFactory())
@@ -76,20 +76,21 @@ public class QueryOneClient extends QueryClient<Integer, Integer> {
         return null;
     }
 
+    private static final String HEADER = "Infraction;Tickets";
+
     @Override
-    public void writeResults(Map<Integer, Integer> resultMap) {
+    public void writeResults(Map<String, Integer> resultMap) {
         if (resultMap == null)
             throw new IllegalStateException("Query not executed");
 
-        final IMap<Integer, String> map = getHazelcastInstance().getMap(getCityData().getMapName());
-
-        final Comparator<Map.Entry<Integer, Integer>> valueComparator =
-                Map.Entry.<Integer, Integer>comparingByValue().reversed()
+        final Comparator<Map.Entry<String, Integer>> valueComparator =
+                Map.Entry.<String, Integer>comparingByValue().reversed()
                         .thenComparing(Map.Entry.comparingByKey());
 
+        System.out.println(HEADER);
         resultMap.entrySet()
                 .stream()
                 .sorted(valueComparator)
-                .forEach(entry -> System.out.println(map.get(entry.getKey()) + ";" + entry.getValue()));
+                .forEach(entry -> System.out.println(entry.getKey() + ";" + entry.getValue()));
     }
 }

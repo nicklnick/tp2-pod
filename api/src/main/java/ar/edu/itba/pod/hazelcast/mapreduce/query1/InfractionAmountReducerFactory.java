@@ -4,9 +4,9 @@ import com.hazelcast.mapreduce.Reducer;
 import com.hazelcast.mapreduce.ReducerFactory;
 
 @SuppressWarnings("deprecation")
-public class InfractionAmountReducerFactory implements ReducerFactory<Integer, Integer, Integer> {
+public class InfractionAmountReducerFactory implements ReducerFactory<String, Integer, Integer> {
     @Override
-    public Reducer<Integer, Integer> newReducer(Integer integer) {
+    public Reducer<Integer, Integer> newReducer(String string) {
         return new InfractionAmountReducer();
     }
 

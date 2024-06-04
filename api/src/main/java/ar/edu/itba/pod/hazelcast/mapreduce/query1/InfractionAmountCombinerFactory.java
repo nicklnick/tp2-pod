@@ -4,10 +4,10 @@ import com.hazelcast.mapreduce.Combiner;
 import com.hazelcast.mapreduce.CombinerFactory;
 
 @SuppressWarnings("deprecation")
-public class InfractionAmountCombinerFactory implements CombinerFactory<Integer, Integer, Integer> {
+public class InfractionAmountCombinerFactory implements CombinerFactory<String, Integer, Integer> {
 
     @Override
-    public Combiner<Integer, Integer> newCombiner(Integer integer) {
+    public Combiner<Integer, Integer> newCombiner(String string) {
         return new InfractionAmountCombiner();
     }
 
@@ -16,7 +16,7 @@ public class InfractionAmountCombinerFactory implements CombinerFactory<Integer,
 
         @Override
         public void combine(Integer integer) {
-            amount++;
+            amount += integer;
         }
 
         @Override
