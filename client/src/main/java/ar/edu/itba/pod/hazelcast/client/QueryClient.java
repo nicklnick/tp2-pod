@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.hazelcast.client;
 
+import ar.edu.itba.pod.hazelcast.cities.CityData;
 import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
 import com.hazelcast.client.HazelcastClient;
@@ -23,9 +24,8 @@ public abstract class QueryClient<K, V> {
             ArgumentUtils.OUT_PATH,
             ArgumentUtils.CITY
     ));
+    private CityData cityData;
     private HazelcastInstance hazelcastInstance;
-
-
 
     public QueryClient(final List<String> arguments) {
         this.arguments.addAll(arguments);
@@ -38,6 +38,7 @@ public abstract class QueryClient<K, V> {
             LOGGER.info("hz-config Client started");
 
             LOGGER.info("Loading data ...");
+            this.cityData = CityData.getCityData(System.getProperty(ArgumentUtils.CITY));
             loadData(System.getProperty(ArgumentUtils.IN_PATH));
             LOGGER.info("Finished loading data ...");
 
@@ -84,6 +85,10 @@ public abstract class QueryClient<K, V> {
         return HazelcastClient.newHazelcastClient(clientConfig);
     }
 
+    public void clearData() {
+        getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME).clear();
+    }
+
     public HazelcastInstance getHazelcastInstance() {
         if(hazelcastInstance == null)
             throw new IllegalStateException("Hazelcast instance not initialized");
@@ -91,8 +96,8 @@ public abstract class QueryClient<K, V> {
         return hazelcastInstance;
     }
 
-    public void clearData() {
-        getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME).clear();
+    public CityData getCityData() {
+        return cityData;
     }
 
     public abstract void loadData(String path);

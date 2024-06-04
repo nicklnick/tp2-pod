@@ -2,14 +2,13 @@ package ar.edu.itba.pod.hazelcast.client.queries;
 
 import ar.edu.itba.pod.hazelcast.client.QueryClient;
 import ar.edu.itba.pod.hazelcast.file.CsvFileReader;
-import ar.edu.itba.pod.hazelcast.file.util.FileNameUtils;
+import ar.edu.itba.pod.hazelcast.file.util.FileUtils;
 import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionAmountCombinerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionAmountReducerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionCodeMapper;
 import ar.edu.itba.pod.hazelcast.models.InfractionNyc;
 import ar.edu.itba.pod.hazelcast.models.TicketNyc;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
-import ar.edu.itba.pod.hazelcast.util.HazelcastNamespaceUtils;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MultiMap;
@@ -32,18 +31,20 @@ public class QueryOneClient extends QueryClient<Integer, Integer> {
 
     @Override
     public void loadData(String dirPath) {
-        final IMap<Integer, String> map = getHazelcastInstance().getMap(HazelcastNamespaceUtils.MAP_INFRACTIONS_NYC);
-        final String infractions = String.join("/", dirPath, FileNameUtils.INFRACTIONS_NYC_CSV);
+        // get infractionsXXX.csv and ticketsXXX.csv
+        final IMap<Integer, String> map = getHazelcastInstance().getMap(getCityData().getMapName());
+        final String infractions = String.join(FileUtils.DELIMITER, dirPath, getCityData().getInfractionsFile());
 
+        final MultiMap<Integer, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
+        final String tickets = String.join(FileUtils.DELIMITER, dirPath, getCityData().getTicketsFile());
+
+        // read infractions and tickets
         CsvFileReader.readRows(infractions, line -> {
             final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
             map.put(infraction.getCode(), infraction.getDescription());
         });
 
-        final MultiMap<Integer, TicketNyc> mm = getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME);
-        final String ticketsNyc = String.join("/", dirPath, FileNameUtils.TICKETS_NYC_CSV);
-
-        CsvFileReader.readRows(ticketsNyc, line -> {
+        CsvFileReader.readRows(tickets, line -> {
             final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
             mm.put(ticket.getCode(), ticket);
         });
@@ -77,10 +78,10 @@ public class QueryOneClient extends QueryClient<Integer, Integer> {
 
     @Override
     public void writeResults(Map<Integer, Integer> resultMap) {
-        if(resultMap == null)
+        if (resultMap == null)
             throw new IllegalStateException("Query not executed");
 
-        final IMap<Integer, String> map = getHazelcastInstance().getMap(HazelcastNamespaceUtils.MAP_INFRACTIONS_NYC);
+        final IMap<Integer, String> map = getHazelcastInstance().getMap(getCityData().getMapName());
 
         final Comparator<Map.Entry<Integer, Integer>> valueComparator =
                 Map.Entry.<Integer, Integer>comparingByValue().reversed()
