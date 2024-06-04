@@ -91,17 +91,21 @@ public abstract class QueryClient<K, V> {
         return hazelcastInstance;
     }
 
+    public void clearData() {
+        getHazelcastInstance().getMultiMap(CredentialUtils.GROUP_NAME).clear();
+    }
+
     public abstract void loadData(String path);
 
     public abstract Map<K, V> solveQuery();
 
     public abstract void writeResults(Map<K, V> resultMap);
 
-    public abstract void clearData();
 
     private void checkArguments() throws IllegalArgumentException {
         for(String argument : arguments)
             if(System.getProperty(argument) == null)
                 throw new IllegalArgumentException("Argument " + argument + " is required");
     }
+
 }
