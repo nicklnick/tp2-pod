@@ -31,6 +31,9 @@ public class CsvFileReader {
                 listener.onCsvParsedLine(nextLine);
             }
 
+            csvReader.close();
+            fileReader.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CsvValidationException e) {

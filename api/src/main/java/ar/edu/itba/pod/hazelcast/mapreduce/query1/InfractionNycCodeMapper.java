@@ -5,7 +5,7 @@ import com.hazelcast.mapreduce.Context;
 import com.hazelcast.mapreduce.Mapper;
 
 @SuppressWarnings("deprecation")
-public class InfractionCodeMapper implements Mapper<String, TicketNyc, String, Integer> {
+public class InfractionNycCodeMapper implements Mapper<String, TicketNyc, String, Integer> {
 
     @Override
     public void map(String string, TicketNyc ticketNyc, Context<String, Integer> context) {

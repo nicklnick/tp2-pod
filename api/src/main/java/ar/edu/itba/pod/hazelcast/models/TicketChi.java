@@ -11,66 +11,68 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 public class TicketChi implements DataSerializable {
-    private UUID plate;
     private LocalDateTime issueDate;
+    private UUID plate;
     private String code;
+    private String issuingAgency;
     private Integer fineAmount;
     private String countyName;
-    private String issuingAgency;
 
     public TicketChi() {
         // for Hazelcast
     }
 
-    public TicketChi(UUID plate,
-                     LocalDateTime issueDate,
+    public TicketChi(LocalDateTime issueDate,
+                     UUID plate,
                      String code,
+                     String issuingAgency,
                      Integer fineAmount,
-                     String countyName,
-                     String issuingAgency
+                     String countyName
     ) {
-        this.plate = plate;
         this.issueDate = issueDate;
+        this.plate = plate;
         this.code = code;
+        this.issuingAgency = issuingAgency;
         this.fineAmount = fineAmount;
         this.countyName = countyName;
-        this.issuingAgency = issuingAgency;
     }
 
     public static TicketChi fromTicketChiCsv(String[] line) {
         return new TicketChi(
-                UUID.fromString(line[0]),
-                LocalDateTime.parse(line[1], CustomDateTimeFormatter.YYYY_MM_DD_HH_MM_SS_WITH_HYPHEN),
+                LocalDateTime.parse(line[0], CustomDateTimeFormatter.YYYY_MM_DD_HH_MM_SS_WITH_SLASH),
+                UUID.fromString(line[1]),
                 line[2],
-                Integer.parseInt(line[3]),
-                line[4],
+                line[3],
+                Integer.parseInt(line[4]),
                 line[5]
         );
     }
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeLong(issueDate.toEpochSecond(ZoneOffset.UTC));
+
         out.writeLong(plate.getMostSignificantBits());
         out.writeLong(plate.getLeastSignificantBits());
 
-        out.writeLong(issueDate.toEpochSecond(ZoneOffset.UTC));
         out.writeUTF(code);
-        out.writeDouble(fineAmount);
-        out.writeUTF(countyName);
         out.writeUTF(issuingAgency);
+        out.writeInt(fineAmount);
+        out.writeUTF(countyName);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
+        issueDate = LocalDateTime.ofEpochSecond(in.readLong(), 0, ZoneOffset.UTC);
+
         long msb = in.readLong();
         long lsb = in.readLong();
         plate = new UUID(msb, lsb);
 
-        issueDate = LocalDateTime.ofEpochSecond(in.readLong(), 0, ZoneOffset.UTC);
         code = in.readUTF();
+        issuingAgency = in.readUTF();
         fineAmount = in.readInt();
         countyName = in.readUTF();
-        issuingAgency = in.readUTF();
     }
 
     @Override
