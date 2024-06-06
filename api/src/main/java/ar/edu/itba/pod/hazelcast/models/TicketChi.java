@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public class TicketChi implements DataSerializable {
     private LocalDateTime issueDate;
-    private UUID plate;
+    private String plate;
     private String code;
     private String issuingAgency;
     private Integer fineAmount;
@@ -23,7 +23,7 @@ public class TicketChi implements DataSerializable {
     }
 
     public TicketChi(LocalDateTime issueDate,
-                     UUID plate,
+                     String plate,
                      String code,
                      String issuingAgency,
                      Integer fineAmount,
@@ -40,7 +40,7 @@ public class TicketChi implements DataSerializable {
     public static TicketChi fromTicketChiCsv(String[] line) {
         return new TicketChi(
                 LocalDateTime.parse(line[0], CustomDateTimeFormatter.YYYY_MM_DD_HH_MM_SS_WITH_SLASH),
-                UUID.fromString(line[1]),
+                line[1],
                 line[2],
                 line[3],
                 Integer.parseInt(line[4]),
@@ -51,10 +51,7 @@ public class TicketChi implements DataSerializable {
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeLong(issueDate.toEpochSecond(ZoneOffset.UTC));
-
-        out.writeLong(plate.getMostSignificantBits());
-        out.writeLong(plate.getLeastSignificantBits());
-
+        out.writeUTF(plate);
         out.writeUTF(code);
         out.writeUTF(issuingAgency);
         out.writeInt(fineAmount);
@@ -64,11 +61,7 @@ public class TicketChi implements DataSerializable {
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         issueDate = LocalDateTime.ofEpochSecond(in.readLong(), 0, ZoneOffset.UTC);
-
-        long msb = in.readLong();
-        long lsb = in.readLong();
-        plate = new UUID(msb, lsb);
-
+        plate = in.readUTF();
         code = in.readUTF();
         issuingAgency = in.readUTF();
         fineAmount = in.readInt();
@@ -87,7 +80,7 @@ public class TicketChi implements DataSerializable {
                 '}';
     }
 
-    public UUID getPlate() {
+    public String getPlate() {
         return plate;
     }
 

@@ -9,6 +9,6 @@ public class InfractionChiCodeMapper implements Mapper<String, TicketChi, String
 
         @Override
         public void map(String string, TicketChi ticketChi, Context<String, Integer> context) {
-            context.emit(ticketChi.getCode(), 1);
+            context.emit(string, 1);
         }
 }
