@@ -52,6 +52,17 @@ public enum CityCsvLoader {
                 mm.put(ticket.getCountyName(), ticket);
             }));
         }
+
+        @Override
+        public void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath) {
+            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
+
+            CsvFileReader.readRows(tickets, line -> {
+                final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
+                mm.put(ticket.getIssuingAgency(), ticket);
+            });
+        }
     },
     CHI {
         @Override
@@ -94,9 +105,21 @@ public enum CityCsvLoader {
                 mm.put(ticket.getCountyName(), ticket);
             }));
         }
+
+        @Override
+        public void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath) {
+            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
+
+            CsvFileReader.readRows(tickets, line -> {
+                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
+                mm.put(ticket.getIssuingAgency(), ticket);
+            });
+        }
     }
     ;
 
     public abstract void loadQueryOne(HazelcastInstance hazelcastInstance, String dirPath);
     public abstract void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath);
+    public abstract void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath);
 }

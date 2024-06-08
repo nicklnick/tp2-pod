@@ -8,6 +8,10 @@ import ar.edu.itba.pod.hazelcast.mapreduce.query2.ChiCountyInfractionsMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountCollator;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountReducerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.NycCountyInfractionsMapper;
+import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketAmountCollator;
+import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketAmountReducerFactory;
+import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketChiAmountMapper;
+import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketNycAmountMapper;
 import ar.edu.itba.pod.hazelcast.models.TicketChi;
 import ar.edu.itba.pod.hazelcast.models.TicketNyc;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
@@ -19,10 +23,7 @@ import com.hazelcast.mapreduce.Job;
 import com.hazelcast.mapreduce.JobTracker;
 import com.hazelcast.mapreduce.KeyValueSource;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("deprecation")
 public enum CityQuerySolver {
@@ -86,6 +87,30 @@ public enum CityQuerySolver {
             }
             return null;
         }
+        @Override
+        public Map<String, Double> solveQueryThree(HazelcastInstance hazelcastInstance) {
+            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+
+            final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
+
+            final KeyValueSource<String, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
+
+            final Job<String, TicketNyc> job = jobTracker.newJob(source);
+
+            final ICompletableFuture<Map<String, Double>> future = job
+                    .mapper(new TicketNycAmountMapper())
+                    .reducer(new TicketAmountReducerFactory())
+                    .submit(new TicketAmountCollator().getCollator());
+
+            // print result
+            try {
+                return future.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
     },
     CHI {
         @Override
@@ -145,8 +170,35 @@ public enum CityQuerySolver {
             }
             return null;
         }
+
+        @Override
+        public Map<String, Double> solveQueryThree(HazelcastInstance hazelcastInstance) {
+            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+
+            final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
+
+            final KeyValueSource<String, TicketChi> source = KeyValueSource.fromMultiMap(mm);
+
+            final Job<String, TicketChi> job = jobTracker.newJob(source);
+
+            final ICompletableFuture<Map<String, Double>> future = job
+                    .mapper(new TicketChiAmountMapper())
+                    .reducer(new TicketAmountReducerFactory())
+                    .submit(new TicketAmountCollator().getCollator());
+
+            // print result
+            try {
+                return future.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
     };
 
     public abstract Map<String, Integer> solveQueryOne(HazelcastInstance hazelcastInstance);
-    public abstract Map<String, List<String>>  solveQueryTwo(HazelcastInstance hazelcastInstance);
+    public abstract Map<String, List<String>> solveQueryTwo(HazelcastInstance hazelcastInstance);
+    public abstract Map<String, Double>  solveQueryThree(HazelcastInstance hazelcastInstance);
+
 }
