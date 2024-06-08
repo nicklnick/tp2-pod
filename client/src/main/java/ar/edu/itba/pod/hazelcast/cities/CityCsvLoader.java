@@ -22,16 +22,15 @@ public enum CityCsvLoader {
             final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
 
-            // read infractions and tickets
             CsvFileReader.readRows(infractionsFile, line -> {
                 final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
                 infractions.put(infraction.getCode(), infraction.getDescription());
             });
 
-            CsvFileReader.readRows(tickets, line -> {
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
                 final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
                 mm.put(infractions.get(ticket.getCode()), ticket);
-            });
+            }));
         }
 
         @Override
@@ -70,10 +69,10 @@ public enum CityCsvLoader {
                 infractions.put(infraction.getCode(), infraction.getDescription());
             });
 
-            CsvFileReader.readRows(tickets, line -> {
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
                 final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
                 mm.put(infractions.get(ticket.getCode()), ticket);
-            });
+            }));
         }
 
         @Override

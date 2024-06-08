@@ -1,17 +1,14 @@
 package ar.edu.itba.pod.hazelcast.models;
 
-import ar.edu.itba.pod.hazelcast.util.CustomDateTimeFormatter;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.UUID;
 
 public class TicketChi implements DataSerializable {
-    private LocalDateTime issueDate;
+    private String issueDate;
     private String plate;
     private String code;
     private String issuingAgency;
@@ -22,7 +19,7 @@ public class TicketChi implements DataSerializable {
         // for Hazelcast
     }
 
-    public TicketChi(LocalDateTime issueDate,
+    public TicketChi(String issueDate,
                      String plate,
                      String code,
                      String issuingAgency,
@@ -39,7 +36,7 @@ public class TicketChi implements DataSerializable {
 
     public static TicketChi fromTicketChiCsv(String[] line) {
         return new TicketChi(
-                LocalDateTime.parse(line[0], CustomDateTimeFormatter.YYYY_MM_DD_HH_MM_SS_WITH_SLASH),
+                line[0],
                 line[1],
                 line[2],
                 line[3],
@@ -50,7 +47,7 @@ public class TicketChi implements DataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(issueDate.toEpochSecond(ZoneOffset.UTC));
+        out.writeUTF(issueDate);
         out.writeUTF(plate);
         out.writeUTF(code);
         out.writeUTF(issuingAgency);
@@ -60,7 +57,7 @@ public class TicketChi implements DataSerializable {
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        issueDate = LocalDateTime.ofEpochSecond(in.readLong(), 0, ZoneOffset.UTC);
+        issueDate = in.readUTF();
         plate = in.readUTF();
         code = in.readUTF();
         issuingAgency = in.readUTF();
@@ -84,7 +81,7 @@ public class TicketChi implements DataSerializable {
         return plate;
     }
 
-    public LocalDateTime getIssueDate() {
+    public String getIssueDate() {
         return issueDate;
     }
 

@@ -1,16 +1,14 @@
 package ar.edu.itba.pod.hazelcast.models;
 
-import ar.edu.itba.pod.hazelcast.util.CustomDateTimeFormatter;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
-import java.time.LocalDate;
 
 public class TicketNyc implements DataSerializable {
     private String plate;
-    private LocalDate issueDate;
+    private String issueDate;
     private Integer code;
     private Double fineAmount;
     private String countyName;
@@ -21,7 +19,7 @@ public class TicketNyc implements DataSerializable {
     }
 
     public TicketNyc(String plate,
-                     LocalDate issueDate,
+                     String issueDate,
                      Integer code,
                      Double fineAmount,
                      String countyName,
@@ -38,7 +36,8 @@ public class TicketNyc implements DataSerializable {
     public static TicketNyc fromTicketNycCsv(String[] line) {
         return new TicketNyc(
                 line[0],
-                LocalDate.parse(line[1], CustomDateTimeFormatter.D_M_YYYY_WITH_SLASH),
+                line[1],
+                //LocalDate.parse(line[1], CustomDateTimeFormatter.D_M_YYYY_WITH_SLASH),
                 Integer.parseInt(line[2]),
                 Double.parseDouble(line[3]),
                 line[4],
@@ -48,7 +47,7 @@ public class TicketNyc implements DataSerializable {
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(plate);
-        out.writeLong(issueDate.toEpochDay());
+        out.writeUTF(issueDate);
         out.writeInt(code);
         out.writeDouble(fineAmount);
         out.writeUTF(countyName);
@@ -58,7 +57,7 @@ public class TicketNyc implements DataSerializable {
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         plate = in.readUTF();
-        issueDate = LocalDate.ofEpochDay(in.readLong());
+        issueDate = in.readUTF();
         code = in.readInt();
         fineAmount = in.readDouble();
         countyName = in.readUTF();
@@ -81,7 +80,7 @@ public class TicketNyc implements DataSerializable {
         return plate;
     }
 
-    public LocalDate getIssueDate() {
+    public String getIssueDate() {
         return issueDate;
     }
 
