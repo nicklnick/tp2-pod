@@ -2,6 +2,7 @@ package ar.edu.itba.pod.hazelcast.client;
 
 import ar.edu.itba.pod.hazelcast.cities.CityData;
 import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
+import ar.edu.itba.pod.hazelcast.time.Stopwatch;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -28,6 +29,10 @@ public abstract class QueryClient<K, V> {
     private HazelcastInstance hazelcastInstance;
 
     public QueryClient(final List<String> arguments) {
+        Stopwatch stopwatch = new Stopwatch();
+        double dataLoadingDuration;
+        double queryDuration;
+
         this.arguments.addAll(arguments);
 
         try {
@@ -38,16 +43,20 @@ public abstract class QueryClient<K, V> {
             LOGGER.info("hz-config Client started");
 
             LOGGER.info("Loading data ...");
+            stopwatch.start();
             this.cityData = CityData.getCityData(System.getProperty(ArgumentUtils.CITY));
             loadData(System.getProperty(ArgumentUtils.IN_PATH));
+            dataLoadingDuration = stopwatch.reset();
             LOGGER.info("Finished loading data ...");
 
             LOGGER.info("Executing query ...");
+            stopwatch.start();
             final Map<K, V> map = solveQuery();
             LOGGER.info("Query executed");
 
             LOGGER.info("Writing results ...");
             writeResults(map);
+            queryDuration = stopwatch.stop();
             LOGGER.info("Results written");
 
             LOGGER.info("Clearing data ...");
@@ -55,6 +64,10 @@ public abstract class QueryClient<K, V> {
             LOGGER.info("Data cleared");
 
             LOGGER.info("Exiting ...");
+
+            System.out.println(dataLoadingDuration);
+            System.out.println(queryDuration);
+
             System.exit(0);
         } catch (IllegalArgumentException e) {
             // TODO: Better message
@@ -105,7 +118,6 @@ public abstract class QueryClient<K, V> {
     public abstract Map<K, V> solveQuery();
 
     public abstract void writeResults(Map<K, V> resultMap);
-
 
     private void checkArguments() throws IllegalArgumentException {
         for(String argument : arguments)
