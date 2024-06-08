@@ -47,10 +47,10 @@ public enum CityCsvLoader {
                 infractions.put(infraction.getCode(), infraction.getDescription());
             });
 
-            CsvFileReader.readRows(tickets, line -> {
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
                 final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
                 mm.put(ticket.getCountyName(), ticket);
-            });
+            }));
         }
     },
     CHI {
@@ -77,22 +77,22 @@ public enum CityCsvLoader {
 
         @Override
         public void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath) {
-            final IMap<Integer, String> infractions = hazelcastInstance.getMap(CityData.NYC.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getInfractionsFile());
+            final IMap<String, String> infractions = hazelcastInstance.getMap(CityData.CHI.getMapName());
+            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getInfractionsFile());
 
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
-            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
+            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
 
             // read infractions and tickets
             CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
+                final InfractionChi infraction = InfractionChi.fromInfractionChiCsv(line);
                 infractions.put(infraction.getCode(), infraction.getDescription());
             });
 
-            CsvFileReader.readRows(tickets, line -> {
-                final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
+                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
                 mm.put(ticket.getCountyName(), ticket);
-            });
+            }));
         }
     }
     ;
