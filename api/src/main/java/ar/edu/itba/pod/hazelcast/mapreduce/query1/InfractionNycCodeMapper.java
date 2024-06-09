@@ -4,11 +4,10 @@ import ar.edu.itba.pod.hazelcast.models.TicketNyc;
 import com.hazelcast.mapreduce.Context;
 import com.hazelcast.mapreduce.Mapper;
 
-@SuppressWarnings("deprecation")
 public class InfractionNycCodeMapper implements Mapper<String, TicketNyc, String, Integer> {
 
     @Override
-    public void map(String string, TicketNyc ticketNyc, Context<String, Integer> context) {
-        context.emit(string, 1);
+    public void map(String s, TicketNyc ticketNyc, Context<String, Integer> context) {
+        context.emit(s, 1);
     }
 }

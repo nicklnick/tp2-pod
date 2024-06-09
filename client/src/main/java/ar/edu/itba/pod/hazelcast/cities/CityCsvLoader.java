@@ -2,10 +2,7 @@ package ar.edu.itba.pod.hazelcast.cities;
 
 import ar.edu.itba.pod.hazelcast.file.CsvFileReader;
 import ar.edu.itba.pod.hazelcast.file.util.FileUtils;
-import ar.edu.itba.pod.hazelcast.models.InfractionChi;
-import ar.edu.itba.pod.hazelcast.models.InfractionNyc;
-import ar.edu.itba.pod.hazelcast.models.TicketChi;
-import ar.edu.itba.pod.hazelcast.models.TicketNyc;
+import ar.edu.itba.pod.hazelcast.models.*;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -13,39 +10,27 @@ import com.hazelcast.core.MultiMap;
 
 public enum CityCsvLoader {
     NYC {
+
         @Override
         public void loadQueryOne(HazelcastInstance hazelcastInstance, String dirPath) {
             // get infractionsXXX.csv and ticketsXXX.csv
-            final IMap<Integer, String> infractions = hazelcastInstance.getMap(CityData.NYC.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getInfractionsFile());
+            final IMap<String, String> infractions = NYC.loadInfractions(hazelcastInstance, dirPath, CityData.NYC);
 
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
 
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
-
             CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
-                final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
+                final Ticket ticket = Ticket.fromTicketNycCsv(line);
                 mm.put(infractions.get(ticket.getCode()), ticket);
             }));
         }
 
         @Override
         public void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath) {
-            final IMap<Integer, String> infractions = hazelcastInstance.getMap(CityData.NYC.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getInfractionsFile());
+            NYC.loadInfractions(hazelcastInstance, dirPath, CityData.NYC);
 
             final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
-
-            // read infractions and tickets
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
 
             CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
                 final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
@@ -55,69 +40,41 @@ public enum CityCsvLoader {
 
         @Override
         public void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath) {
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
 
-            CsvFileReader.readRows(tickets, line -> {
-                final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
+                final Ticket ticket = Ticket.fromTicketNycCsv(line);
                 mm.put(ticket.getIssuingAgency(), ticket);
-            });
+            }));
         }
+
+        @Override
         public void loadQueryFive(HazelcastInstance hazelcastInstance, String dirPath) {
-            final IMap<Integer, String> infractions = hazelcastInstance.getMap(CityData.NYC.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getInfractionsFile());
-
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
-            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
-
-
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionNyc infraction = InfractionNyc.fromInfractionNycCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
-
-            CsvFileReader.readRows(tickets, line -> {
-                final TicketNyc ticket = TicketNyc.fromTicketNycCsv(line);
-                mm.put(ticket.getCountyName(), ticket);
-                mm.put(infractions.get(ticket.getCode()), ticket);
-            });
+            loadQueryOne(hazelcastInstance, dirPath);
         }
     },
     CHI {
         @Override
         public void loadQueryOne(HazelcastInstance hazelcastInstance, String dirPath) {
-            // get infractionsXXX.csv and ticketsXXX.csv
-            final IMap<String, String> infractions = hazelcastInstance.getMap(CityData.CHI.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getInfractionsFile());
+            final IMap<String, String> infractions = CHI.loadInfractions(hazelcastInstance, dirPath, CityData.CHI);
 
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            // get infractionsXXX.csv and ticketsXXX.csv
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
 
-            // read infractions and tickets
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionChi infraction = InfractionChi.fromInfractionChiCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
-
             CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
-                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
+                final Ticket ticket = Ticket.fromTicketChiCsv(line);
                 mm.put(infractions.get(ticket.getCode()), ticket);
             }));
         }
 
         @Override
         public void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath) {
-            final IMap<String, String> infractions = hazelcastInstance.getMap(CityData.CHI.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getInfractionsFile());
+            CHI.loadInfractions(hazelcastInstance, dirPath, CityData.CHI);
 
             final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
-
-            // read infractions and tickets
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionChi infraction = InfractionChi.fromInfractionChiCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
 
             CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
                 final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
@@ -127,36 +84,32 @@ public enum CityCsvLoader {
 
         @Override
         public void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath) {
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
 
-            CsvFileReader.readRows(tickets, line -> {
-                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
+            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
+                final Ticket ticket = Ticket.fromTicketChiCsv(line);
                 mm.put(ticket.getIssuingAgency(), ticket);
-            });
+            }));
         }
         @Override
         public void loadQueryFive(HazelcastInstance hazelcastInstance, String dirPath) {
-            final IMap<String, String> infractions = hazelcastInstance.getMap(CityData.CHI.getMapName());
-            final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getInfractionsFile());
-
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
-            final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
-
-            CsvFileReader.readRows(infractionsFile, line -> {
-                final InfractionChi infraction = InfractionChi.fromInfractionChiCsv(line);
-                infractions.put(infraction.getCode(), infraction.getDescription());
-            });
-
-            CsvFileReader.batchReadRows(tickets, lines -> lines.stream().forEach(
-                    line -> {
-                        final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
-                        mm.put(ticket.getCountyName(), ticket);
-                        mm.put(infractions.get(ticket.getCode()), ticket);
-            }));
+            loadQueryOne(hazelcastInstance, dirPath);
         }
     }
     ;
+
+    private IMap<String, String> loadInfractions(HazelcastInstance hazelcastInstance, String dirPath, CityData cityData) {
+        final IMap<String, String> infractions = hazelcastInstance.getMap(cityData.getMapName());
+        final String infractionsFile = String.join(FileUtils.DELIMITER, dirPath, cityData.getInfractionsFile());
+
+        CsvFileReader.readRows(infractionsFile, line -> {
+            final Infraction infraction = Infraction.fromInfractionCsv(line);
+            infractions.put(infraction.getCode(), infraction.getDescription());
+        });
+
+        return infractions;
+    }
 
     public abstract void loadQueryOne(HazelcastInstance hazelcastInstance, String dirPath);
     public abstract void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath);

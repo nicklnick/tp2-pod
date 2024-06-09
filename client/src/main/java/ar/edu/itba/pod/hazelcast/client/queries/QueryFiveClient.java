@@ -27,17 +27,18 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
 
     @Override
     public void writeResults(Map<String, Integer> resultMap) {
-        Map<Integer, Set<String>> hundredGroups = new HashMap<>();
+        final Map<Integer, Set<String>> hundredGroups = new HashMap<>();
+
         resultMap.entrySet().forEach(
             entry -> {
-                Integer group = entry.getValue() / 100;
+                final Integer group = entry.getValue() / 100;
                 hundredGroups.putIfAbsent(group, new TreeSet<>());
                 hundredGroups.get(group).add(entry.getKey());
             }
         );
 
         hundredGroups.keySet().stream().sorted(Comparator.reverseOrder()).forEach(group -> {
-                String[] auxArray = hundredGroups.get(group).toArray(new String[0]);
+                final String[] auxArray = hundredGroups.get(group).toArray(new String[0]);
 
                 for (int current = 0; current < auxArray.length - 1; current++) {
                     for (int j = current + 1; j < auxArray.length; j++) {

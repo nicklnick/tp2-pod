@@ -4,7 +4,7 @@ import com.hazelcast.mapreduce.Combiner;
 import com.hazelcast.mapreduce.CombinerFactory;
 
 @SuppressWarnings("deprecation")
-public class InfractionFineAmountNycCombinerFactory implements CombinerFactory<String, Double, Double>{
+public class InfractionFineAmountCombinerFactory implements CombinerFactory<String, Double, Double>{
     @Override
     public Combiner<Double, Double> newCombiner(String string) {
         return new InfractionFineAmountCombiner();

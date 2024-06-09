@@ -1,18 +1,13 @@
 package ar.edu.itba.pod.hazelcast.cities;
 
-import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionAmountCombinerFactory;
-import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionAmountReducerFactory;
-import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionChiCodeMapper;
-import ar.edu.itba.pod.hazelcast.mapreduce.query1.InfractionNycCodeMapper;
+import ar.edu.itba.pod.hazelcast.mapreduce.query1.*;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.ChiCountyInfractionsMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountCollator;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountReducerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.NycCountyInfractionsMapper;
-import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketAmountCollator;
-import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketAmountReducerFactory;
-import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketChiAmountMapper;
-import ar.edu.itba.pod.hazelcast.mapreduce.query3.TicketNycAmountMapper;
+import ar.edu.itba.pod.hazelcast.mapreduce.query3.*;
 import ar.edu.itba.pod.hazelcast.mapreduce.query5.*;
+import ar.edu.itba.pod.hazelcast.models.Ticket;
 import ar.edu.itba.pod.hazelcast.models.TicketChi;
 import ar.edu.itba.pod.hazelcast.models.TicketNyc;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
@@ -31,16 +26,16 @@ public enum CityQuerySolver {
     NYC {
         @Override
         public Map<String, Integer> solveQueryOne(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketNyc> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
             final ICompletableFuture<Map<String, Integer>> future = job
-                    .mapper(new InfractionNycCodeMapper())
+                    .mapper(new InfractionCodeMapper())
                     .combiner(new InfractionAmountCombinerFactory())
                     .reducer(new InfractionAmountReducerFactory())
                     .submit();
@@ -90,16 +85,16 @@ public enum CityQuerySolver {
         }
         @Override
         public Map<String, Double> solveQueryThree(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketNyc> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
             final ICompletableFuture<Map<String, Double>> future = job
-                    .mapper(new TicketNycAmountMapper())
+                    .mapper(new TicketFineAmountMapper())
                     .reducer(new TicketAmountReducerFactory())
                     .submit(new TicketAmountCollator().getCollator());
 
@@ -113,31 +108,31 @@ public enum CityQuerySolver {
             return null;
         }
         public Map<String, Integer> solveQueryFive(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketNyc> source= KeyValueSource.fromMultiMap(mm);
-            final Job<String, TicketNyc> job = jobTracker.newJob(source);
+            final KeyValueSource<String, Ticket> source= KeyValueSource.fromMultiMap(mm);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
-            final ICompletableFuture<Map<String, Integer>> future = job
-                    .mapper(new InfractionNycCodeMapper())
-                    .combiner(new InfractionFineAmountChiCombinerFactory())
-                    .reducer(new InfractionFineAmountChiReducerFactory())
+            final ICompletableFuture<Map<String, Double>> future = job
+                    .mapper(new InfractionFineAmountMapper())
+                    .combiner(new InfractionFineAmountCombinerFactory())
+                    .reducer(new InfractionFineAmountReducerFactory())
                     .submit();
 
             try{
-                final Map<String, Integer> totalFineAmountPerInfractionType = future.get();
+                final Map<String, Double> totalFineAmountPerInfractionType = future.get();
 
                 final Map<String, Integer> totalTicketsPerInfractionType = solveQueryOne(hazelcastInstance);
 
-                Map<String, Integer> meanFineAmountPerInfractionType = new HashMap<>();
+                final Map<String, Integer> meanFineAmountPerInfractionType = new HashMap<>();
 
                 totalTicketsPerInfractionType.entrySet().parallelStream().forEach(
                         entry -> {
                             String infractionType = entry.getKey();
                             Integer totalTickets = entry.getValue();
-                            Integer totalFineAmount = totalFineAmountPerInfractionType.get(infractionType);
-                            meanFineAmountPerInfractionType.put(infractionType, totalFineAmount / totalTickets);
+                            Double totalFineAmount = totalFineAmountPerInfractionType.get(infractionType);
+                            meanFineAmountPerInfractionType.put(infractionType, totalFineAmount.intValue() / totalTickets);
                         }
                 );
 
@@ -152,16 +147,16 @@ public enum CityQuerySolver {
     CHI {
         @Override
         public Map<String, Integer> solveQueryOne(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketChi> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketChi> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
             final ICompletableFuture<Map<String, Integer>> future = job
-                    .mapper(new InfractionChiCodeMapper())
+                    .mapper(new InfractionCodeMapper())
                     .combiner(new InfractionAmountCombinerFactory())
                     .reducer(new InfractionAmountReducerFactory())
                     .submit();
@@ -210,16 +205,16 @@ public enum CityQuerySolver {
 
         @Override
         public Map<String, Double> solveQueryThree(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketChi> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketChi> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
             final ICompletableFuture<Map<String, Double>> future = job
-                    .mapper(new TicketChiAmountMapper())
+                    .mapper(new TicketFineAmountMapper())
                     .reducer(new TicketAmountReducerFactory())
                     .submit(new TicketAmountCollator().getCollator());
 
@@ -234,20 +229,20 @@ public enum CityQuerySolver {
         }
         @Override
         public Map<String, Integer> solveQueryFive(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketChi> source= KeyValueSource.fromMultiMap(mm);
-            final Job<String, TicketChi> job = jobTracker.newJob(source);
+            final KeyValueSource<String, Ticket> source= KeyValueSource.fromMultiMap(mm);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
-            final ICompletableFuture<Map<String, Integer>> future = job
-                    .mapper(new InfractionFineAmountChiMapper())
-                    .combiner(new InfractionFineAmountChiCombinerFactory())
-                    .reducer(new InfractionFineAmountChiReducerFactory())
+            final ICompletableFuture<Map<String, Double>> future = job
+                    .mapper(new InfractionFineAmountMapper())
+                    .combiner(new InfractionFineAmountCombinerFactory())
+                    .reducer(new InfractionFineAmountReducerFactory())
                     .submit();
 
             try{
-                final Map<String, Integer> totalFineAmountPerInfractionType = future.get();
+                final Map<String, Double> totalFineAmountPerInfractionType = future.get();
 
                 final Map<String, Integer> totalTicketsPerInfractionType = solveQueryOne(hazelcastInstance);
 
@@ -257,8 +252,8 @@ public enum CityQuerySolver {
                         entry -> {
                             String infractionType = entry.getKey();
                             Integer totalTickets = entry.getValue();
-                            Integer totalFineAmount = totalFineAmountPerInfractionType.get(infractionType);
-                            meanFineAmountPerInfractionType.put(infractionType, totalFineAmount / totalTickets);
+                            Double totalFineAmount = totalFineAmountPerInfractionType.get(infractionType);
+                            meanFineAmountPerInfractionType.put(infractionType, totalFineAmount.intValue() / totalTickets);
                         }
                 );
 

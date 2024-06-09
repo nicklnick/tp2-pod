@@ -6,38 +6,39 @@ import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
 
-public class InfractionNyc implements DataSerializable {
-    private Integer code;
+public class Infraction implements DataSerializable {
+    private String code;
     private String description;
 
-    public InfractionNyc() {
+    public Infraction() {
         // for Hazelcast
     }
 
-    public InfractionNyc(Integer code, String description) {
+    public Infraction(String code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    public static InfractionNyc fromInfractionNycCsv(String[] line) {
-        return new InfractionNyc(
-                Integer.parseInt(line[0]),
-                line[1]);
+    public static Infraction fromInfractionCsv(String[] line) {
+        return new Infraction(
+                line[0],
+                line[1]
+        );
     }
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeInt(code);
+        out.writeUTF(code);
         out.writeUTF(description);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        code = in.readInt();
+        code = in.readUTF();
         description = in.readUTF();
     }
 
-    public Integer getCode() {
+    public String getCode() {
         return code;
     }
 
