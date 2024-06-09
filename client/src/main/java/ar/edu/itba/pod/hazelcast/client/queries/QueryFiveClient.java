@@ -25,13 +25,17 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
         return getCityData().getQuerySolver().solveQueryFive(getHazelcastInstance());
     }
 
+    private static final String HEADER = "Group;Infraction A;Infraction B";
+
     @Override
     public void writeResults(Map<String, Integer> resultMap) {
         final Map<Integer, Set<String>> hundredGroups = new HashMap<>();
 
+        System.out.println(HEADER);
         resultMap.entrySet().forEach(
             entry -> {
                 final Integer group = entry.getValue() / 100;
+                if(group == 0) return;
                 hundredGroups.putIfAbsent(group, new TreeSet<>());
                 hundredGroups.get(group).add(entry.getKey());
             }
@@ -42,7 +46,7 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
 
                 for (int current = 0; current < auxArray.length - 1; current++) {
                     for (int j = current + 1; j < auxArray.length; j++) {
-                        System.out.println(group + ";" + auxArray[current] + ";" + auxArray[j]);
+                        System.out.println(group * 100 + ";" + auxArray[current] + ";" + auxArray[j]);
                     }
                 }
             }
