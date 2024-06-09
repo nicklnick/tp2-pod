@@ -148,11 +148,12 @@ public enum CityCsvLoader {
                 infractions.put(infraction.getCode(), infraction.getDescription());
             });
 
-            CsvFileReader.readRows(tickets, line -> {
-                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
-                mm.put(ticket.getCountyName(), ticket);
-                mm.put(infractions.get(ticket.getCode()), ticket);
-            });
+            CsvFileReader.batchReadRows(tickets, lines -> lines.stream().forEach(
+                    line -> {
+                        final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
+                        mm.put(ticket.getCountyName(), ticket);
+                        mm.put(infractions.get(ticket.getCode()), ticket);
+            }));
         }
     }
     ;

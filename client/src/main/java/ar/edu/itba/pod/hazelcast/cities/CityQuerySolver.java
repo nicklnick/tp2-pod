@@ -112,21 +112,36 @@ public enum CityQuerySolver {
 
             return null;
         }
-        public Map<String, Double> solveQueryFive(HazelcastInstance hazelcastInstance) {
+        public Map<String, Integer> solveQueryFive(HazelcastInstance hazelcastInstance) {
             final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
             final KeyValueSource<String, TicketNyc> source= KeyValueSource.fromMultiMap(mm);
             final Job<String, TicketNyc> job = jobTracker.newJob(source);
 
-            final ICompletableFuture<Map<String, Double>> future = job
-                    .mapper(new InfractionFineAmountNycMapper())
-                    .combiner(new InfractionFineAmountNycCombinerFactory())
-                    .reducer(new InfractionFineAmountNycReducerFactory())
+            final ICompletableFuture<Map<String, Integer>> future = job
+                    .mapper(new InfractionNycCodeMapper())
+                    .combiner(new InfractionFineAmountChiCombinerFactory())
+                    .reducer(new InfractionFineAmountChiReducerFactory())
                     .submit();
 
             try{
-                return future.get();
+                final Map<String, Integer> totalFineAmountPerInfractionType = future.get();
+
+                final Map<String, Integer> totalTicketsPerInfractionType = solveQueryOne(hazelcastInstance);
+
+                Map<String, Integer> meanFineAmountPerInfractionType = new HashMap<>();
+
+                totalTicketsPerInfractionType.entrySet().parallelStream().forEach(
+                        entry -> {
+                            String infractionType = entry.getKey();
+                            Integer totalTickets = entry.getValue();
+                            Integer totalFineAmount = totalFineAmountPerInfractionType.get(infractionType);
+                            meanFineAmountPerInfractionType.put(infractionType, totalFineAmount / totalTickets);
+                        }
+                );
+
+                return meanFineAmountPerInfractionType;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -217,6 +232,7 @@ public enum CityQuerySolver {
 
             return null;
         }
+        @Override
         public Map<String, Integer> solveQueryFive(HazelcastInstance hazelcastInstance) {
             final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);

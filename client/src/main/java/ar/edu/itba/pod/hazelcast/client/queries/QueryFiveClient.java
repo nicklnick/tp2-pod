@@ -28,7 +28,7 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
     @Override
     public void writeResults(Map<String, Integer> resultMap) {
         Map<Integer, Set<String>> hundredGroups = new HashMap<>();
-        resultMap.entrySet().parallelStream().forEach(
+        resultMap.entrySet().forEach(
             entry -> {
                 Integer group = entry.getValue() / 100;
                 hundredGroups.putIfAbsent(group, new TreeSet<>());
@@ -37,16 +37,14 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
         );
 
         hundredGroups.keySet().stream().sorted(Comparator.reverseOrder()).forEach(group -> {
-                    String[] auxArray = hundredGroups.get(group).toArray(new String[0]);
-                    int current = 0;
-                    for(int j = current+1 ; j < auxArray.length ; j++) {
-                        System.out.println(group * 100 + " ; " + auxArray[current] + ";" + auxArray[j]);
-                        if(j == auxArray.length-1) {
-                            current++;
-                            j = current+1;
-                        }
+                String[] auxArray = hundredGroups.get(group).toArray(new String[0]);
+
+                for (int current = 0; current < auxArray.length - 1; current++) {
+                    for (int j = current + 1; j < auxArray.length; j++) {
+                        System.out.println(group + ";" + auxArray[current] + ";" + auxArray[j]);
                     }
                 }
+            }
         );
     }
 }
