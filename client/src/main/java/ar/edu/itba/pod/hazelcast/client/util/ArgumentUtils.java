@@ -10,6 +10,8 @@ public class ArgumentUtils {
 
     // Query specific arguments
     public static final String N_AGENCIES = "n";
+    public static final String FROM_DATE = "from";
+    public static final String TO_DATE = "to";
 
 
 
