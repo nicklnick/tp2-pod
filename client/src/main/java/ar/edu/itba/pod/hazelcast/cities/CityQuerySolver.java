@@ -1,18 +1,15 @@
 package ar.edu.itba.pod.hazelcast.cities;
 
 import ar.edu.itba.pod.hazelcast.mapreduce.query1.*;
-import ar.edu.itba.pod.hazelcast.mapreduce.query2.ChiCountyInfractionsMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountCollator;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountReducerFactory;
-import ar.edu.itba.pod.hazelcast.mapreduce.query2.NycCountyInfractionsMapper;
+import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query3.*;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlatesMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlateFinesCombinerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlateFinesReducerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query5.*;
 import ar.edu.itba.pod.hazelcast.models.Ticket;
-import ar.edu.itba.pod.hazelcast.models.TicketChi;
-import ar.edu.itba.pod.hazelcast.models.TicketNyc;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
@@ -54,27 +51,26 @@ public enum CityQuerySolver {
 
         @Override
         public Map<String,List<String>> solveQueryTwo(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketNyc> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final IMap<Integer,String> infractions = hazelcastInstance.getMap(CityData.NYC.getMapName());
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketNyc> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketNyc> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
-            final ICompletableFuture<Map<String, Map<Integer,Integer>>> future = job
-                    .mapper(new NycCountyInfractionsMapper())
-                    .reducer(new CountyInfractionsAmountReducerFactory().getNycFactory())
-                    .submit(new CountyInfractionsAmountCollator().getNycCollator());
+            final ICompletableFuture<Map<String, Map<String, Integer>>> future = job
+                    .mapper(new CountyInfractionsMapper())
+                    .reducer(new CountyInfractionsAmountReducerFactory())
+                    .submit(new CountyInfractionsAmountCollator());
 
-            // print result
             try {
-                Map<String,List<String>> results = new LinkedHashMap<>();
-                for (Map.Entry<String,Map<Integer,Integer>> entry : future.get().entrySet()) {
+                Map<String, List<String>> results = new LinkedHashMap<>();
+                for (Map.Entry<String,Map<String,Integer>> entry : future.get().entrySet()) {
                     List<String> infractionsDescription = new ArrayList<>();
-                    for (Integer key : entry.getValue().keySet()) {
+                    for (String key : entry.getValue().keySet()) {
                         infractionsDescription.add(infractions.get(key));
                     }
                     results.put(entry.getKey(), infractionsDescription);
@@ -196,21 +192,21 @@ public enum CityQuerySolver {
 
         @Override
         public Map<String,List<String>> solveQueryTwo(HazelcastInstance hazelcastInstance) {
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
 
             final IMap<Integer,String> infractions = hazelcastInstance.getMap(CityData.CHI.getMapName());
 
             final JobTracker jobTracker = hazelcastInstance.getJobTracker(CredentialUtils.GROUP_NAME);
 
-            final KeyValueSource<String, TicketChi> source = KeyValueSource.fromMultiMap(mm);
+            final KeyValueSource<String, Ticket> source = KeyValueSource.fromMultiMap(mm);
 
-            final Job<String, TicketChi> job = jobTracker.newJob(source);
+            final Job<String, Ticket> job = jobTracker.newJob(source);
 
             final ICompletableFuture<Map<String, Map<String,Integer>>> future = job
-                    .mapper(new ChiCountyInfractionsMapper())
-                    .reducer(new CountyInfractionsAmountReducerFactory().getChiFactory())
-                    .submit(new CountyInfractionsAmountCollator().getChiCollator());
-            // print result
+                    .mapper(new CountyInfractionsMapper())
+                    .reducer(new CountyInfractionsAmountReducerFactory())
+                    .submit(new CountyInfractionsAmountCollator());
+
             try {
                 Map<String,List<String>> results = new LinkedHashMap<>();
                 for (Map.Entry<String,Map<String,Integer>> entry : future.get().entrySet()) {
