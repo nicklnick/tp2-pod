@@ -38,12 +38,6 @@ public class Server {
 
         config.setNetworkConfig(networkConfig);
 
-        // Management center config
-        ManagementCenterConfig managementCenterConfig = new ManagementCenterConfig()
-                .setEnabled(true)
-                .setUrl(MAN_CENTER_URL);
-        config.setManagementCenterConfig(managementCenterConfig);
-
         // Start the server
         final HazelcastInstance hazelcast = Hazelcast.newHazelcastInstance(config);
         LOGGER.info("hz-config Server started");
