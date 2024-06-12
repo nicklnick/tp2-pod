@@ -25,4 +25,14 @@ public class CsvFileWriter {
             e.printStackTrace();
         }
     }
+
+    public static void writeLog(String filePath, List<String> logMessages) {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            for (String logMessage : logMessages) {
+                writer.write(logMessage + System.lineSeparator());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

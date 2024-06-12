@@ -2,6 +2,7 @@ package ar.edu.itba.pod.hazelcast.client;
 
 import ar.edu.itba.pod.hazelcast.cities.CityData;
 import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
+import ar.edu.itba.pod.hazelcast.file.CsvFileWriter;
 import ar.edu.itba.pod.hazelcast.time.Stopwatch;
 import ar.edu.itba.pod.hazelcast.util.CredentialUtils;
 import com.hazelcast.client.HazelcastClient;
@@ -12,12 +13,15 @@ import com.hazelcast.core.HazelcastInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public abstract class QueryClient<K, V> {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryClient.class);
+    protected final List<String[] > rows = new ArrayList<>();
 
     private final List<String> arguments = new ArrayList<>(List.of(
             ArgumentUtils.ADDRESSES,
@@ -38,37 +42,51 @@ public abstract class QueryClient<K, V> {
         try {
             checkArguments();
 
+
             LOGGER.info("hz-config Client Starting ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - hz-config Client Starting ..."});
+
             this.hazelcastInstance = startClient();
             LOGGER.info("hz-config Client started");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - hz-config Client started"});
 
             LOGGER.info("Loading data ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Loading data ..."});
             stopwatch.start();
             this.cityData = CityData.getCityData(System.getProperty(ArgumentUtils.CITY));
             loadData(System.getProperty(ArgumentUtils.IN_PATH));
+
             dataLoadingDuration = stopwatch.reset();
+            rows.add(new String[]{"Stopwatch Data Loading Duration:", String.valueOf(dataLoadingDuration)});
             LOGGER.info("Finished loading data ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Finished loading data ..."});
 
             LOGGER.info("Executing query ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Executing query ..."});
             stopwatch.start();
             final Map<K, V> map = solveQuery();
             LOGGER.info("Query executed");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Query executed"});
 
             LOGGER.info("Writing results ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Writing results ..."});
             writeResults(map);
             queryDuration = stopwatch.stop();
             LOGGER.info("Results written");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Results written"});
+            rows.add(new String[]{"Stopwatch Query Duration:", String.valueOf(queryDuration)});
 
             LOGGER.info("Clearing data ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Clearing data ..."});
             clearData();
             LOGGER.info("Data cleared");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Data cleared"});
 
             LOGGER.info("Exiting ...");
+            rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Exiting ..."});
 
             System.out.println(dataLoadingDuration);
             System.out.println(queryDuration);
-
-            System.exit(0);
         } catch (IllegalArgumentException e) {
             // TODO: Better message
             LOGGER.error(e.getMessage());

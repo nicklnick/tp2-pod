@@ -1,13 +1,19 @@
 package ar.edu.itba.pod.hazelcast.client.queries;
 
 import ar.edu.itba.pod.hazelcast.client.QueryClient;
+import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
+import ar.edu.itba.pod.hazelcast.file.CsvFileWriter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class QueryTwoClient extends QueryClient<String, List<String>> {
     public QueryTwoClient() {
         super(List.of());
+        CsvFileWriter.writeRows(System.getProperty(ArgumentUtils.OUT_PATH) + "/time2.txt", rows);
+        System.exit(0);
+
     }
 
     public static void main(String[] args) {
@@ -31,6 +37,9 @@ public class QueryTwoClient extends QueryClient<String, List<String>> {
         if (resultMap == null)
             throw new IllegalStateException("Query not executed");
 
+        final List<String[]> rows = new ArrayList<>();
+        rows.add(new String[]{"County", "InfractionTop1", "InfractionTop2", "InfractionTop3"});
+
         System.out.println(HEADER);
         resultMap.forEach((county, infractions) -> {
             String infractionTop1 = !infractions.isEmpty() ? infractions.get(0) : "";
@@ -42,6 +51,9 @@ public class QueryTwoClient extends QueryClient<String, List<String>> {
                     infractionTop1,
                     infractionTop2,
                     infractionTop3);
+            rows.add(new String[]{county, infractionTop1, infractionTop2, infractionTop3});
         });
+        String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query3" + ".csv";
+        CsvFileWriter.writeRows(outFile, rows);
     }
 }

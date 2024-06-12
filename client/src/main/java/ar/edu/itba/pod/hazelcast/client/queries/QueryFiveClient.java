@@ -1,6 +1,8 @@
 package ar.edu.itba.pod.hazelcast.client.queries;
 
 import ar.edu.itba.pod.hazelcast.client.QueryClient;
+import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
+import ar.edu.itba.pod.hazelcast.file.CsvFileWriter;
 import com.hazelcast.core.HazelcastInstance;
 
 import java.util.*;
@@ -9,6 +11,8 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
 
     public QueryFiveClient() {
         super(List.of());
+        CsvFileWriter.writeRows(System.getProperty(ArgumentUtils.OUT_PATH) + "/time5.txt", rows);
+        System.exit(0);
     }
 
     public static void main(String[] args) {
@@ -40,16 +44,21 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
                 hundredGroups.get(group).add(entry.getKey());
             }
         );
-
+        final List<String[]> rows = new ArrayList<>();
+        rows.add(new String[]{"Group", "Infraction A", "Infraction B"});
+        System.out.println(HEADER);
         hundredGroups.keySet().stream().sorted(Comparator.reverseOrder()).forEach(group -> {
                 final String[] auxArray = hundredGroups.get(group).toArray(new String[0]);
-
                 for (int current = 0; current < auxArray.length - 1; current++) {
                     for (int j = current + 1; j < auxArray.length; j++) {
+                        rows.add(new String[]{group * 100 + "", auxArray[current], auxArray[j]});
                         System.out.println(group * 100 + ";" + auxArray[current] + ";" + auxArray[j]);
                     }
                 }
+
             }
         );
+        String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query5" + ".csv";
+        CsvFileWriter.writeRows(outFile, rows);
     }
 }
