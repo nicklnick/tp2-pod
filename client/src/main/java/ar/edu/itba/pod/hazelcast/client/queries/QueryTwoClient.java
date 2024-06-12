@@ -53,7 +53,7 @@ public class QueryTwoClient extends QueryClient<String, List<String>> {
                     infractionTop3);
             rows.add(new String[]{county, infractionTop1, infractionTop2, infractionTop3});
         });
-        String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query3" + ".csv";
+        String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query2" + ".csv";
         CsvFileWriter.writeRows(outFile, rows);
     }
 }
