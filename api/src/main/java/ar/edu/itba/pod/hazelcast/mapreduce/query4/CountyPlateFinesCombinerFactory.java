@@ -3,6 +3,7 @@ package ar.edu.itba.pod.hazelcast.mapreduce.query4;
 import com.hazelcast.mapreduce.Combiner;
 import com.hazelcast.mapreduce.CombinerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class CountyPlateFinesCombinerFactory implements CombinerFactory<String, 
 
         @Override
         public Map<String, Integer> finalizeChunk() {
-            return countMap;
+            return Map.copyOf(countMap);
         }
 
         @Override

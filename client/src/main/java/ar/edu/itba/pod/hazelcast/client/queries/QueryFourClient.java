@@ -3,13 +3,13 @@ package ar.edu.itba.pod.hazelcast.client.queries;
 import ar.edu.itba.pod.hazelcast.client.QueryClient;
 import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
 import ar.edu.itba.pod.hazelcast.file.CsvFileWriter;
+import ar.edu.itba.pod.hazelcast.models.PlateInfractions;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class QueryFourClient extends QueryClient<String, Map.Entry<String, Integer>>  {
+public class QueryFourClient extends QueryClient<String, PlateInfractions>  {
 
     private static final String HEADER = "County;Plate;Tickets";
     public QueryFourClient() {
@@ -19,7 +19,7 @@ public class QueryFourClient extends QueryClient<String, Map.Entry<String, Integ
     }
 
     public static void main(String[] args) {
-        QueryClient<String, Map.Entry<String, Integer>> client = new QueryFourClient();
+        QueryClient<String, PlateInfractions> client = new QueryFourClient();
     }
 
     @Override
@@ -28,12 +28,12 @@ public class QueryFourClient extends QueryClient<String, Map.Entry<String, Integ
     }
 
     @Override
-    public Map<String, Map.Entry<String, Integer>> solveQuery() {
+    public Map<String, PlateInfractions> solveQuery() {
         return getCityData().getQuerySolver().solveQueryFour(getHazelcastInstance());
     }
 
     @Override
-    public void writeResults(Map<String, Map.Entry<String, Integer>> resultMap) {
+    public void writeResults(Map<String, PlateInfractions> resultMap) {
         if (resultMap == null)
             throw new IllegalStateException("Query not executed");
 
@@ -45,8 +45,8 @@ public class QueryFourClient extends QueryClient<String, Map.Entry<String, Integ
                  .stream()
                  .sorted(Map.Entry.comparingByKey())
                  .forEach(entry -> {
-                     System.out.println(entry.getKey() + ";" + entry.getValue().getKey() + ";" + entry.getValue().getValue());
-                        rows.add(new String[]{entry.getKey(), entry.getValue().getKey(), entry.getValue().getValue().toString()});
+                     System.out.println(entry.getKey() + ";" + entry.getValue().getPlate() + ";" + entry.getValue().getInfractions());
+                        rows.add(new String[]{entry.getKey(), entry.getValue().getPlate(), String.valueOf(entry.getValue().getInfractions())});
                  });
 
         String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query4" + ".csv";
