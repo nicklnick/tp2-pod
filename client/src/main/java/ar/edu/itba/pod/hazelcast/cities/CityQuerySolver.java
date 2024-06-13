@@ -5,6 +5,7 @@ import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountCollato
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsAmountReducerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query2.CountyInfractionsMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query3.*;
+import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlateCollator;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlatesMapper;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlateFinesCombinerFactory;
 import ar.edu.itba.pod.hazelcast.mapreduce.query4.CountyPlateFinesReducerFactory;
@@ -118,7 +119,7 @@ public enum CityQuerySolver {
                     .mapper(new CountyPlatesMapper())
                     .combiner(new CountyPlateFinesCombinerFactory())
                     .reducer(new CountyPlateFinesReducerFactory())
-                    .submit();
+                    .submit(new CountyPlateCollator());
 
             try {
                 return future.get();
@@ -260,7 +261,7 @@ public enum CityQuerySolver {
                     .mapper(new CountyPlatesMapper())
                     .combiner(new CountyPlateFinesCombinerFactory())
                     .reducer(new CountyPlateFinesReducerFactory())
-                    .submit();
+                    .submit(new CountyPlateCollator());
 
             try {
                 return future.get();

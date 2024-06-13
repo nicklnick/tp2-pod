@@ -1,5 +1,7 @@
 package ar.edu.itba.pod.hazelcast.mapreduce.query4;
 
+import ar.edu.itba.pod.hazelcast.models.Pair;
+import ar.edu.itba.pod.hazelcast.models.PlateInfractions;
 import com.hazelcast.mapreduce.Combiner;
 import com.hazelcast.mapreduce.CombinerFactory;
 
@@ -8,29 +10,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings("deprecation")
-public class CountyPlateFinesCombinerFactory implements CombinerFactory<String, String, Map<String, Integer>> {
+public class CountyPlateFinesCombinerFactory implements CombinerFactory<Pair<String,String>, PlateInfractions, PlateInfractions> {
     @Override
-    public Combiner<String, Map<String, Integer>> newCombiner(String s) {
-        return new CountyPlateFinesCombiner();
+    public Combiner<PlateInfractions, PlateInfractions> newCombiner(Pair<String,String> countyPlate) {
+        return new CountyPlateFinesCombiner(countyPlate);
     }
 
-    private static class CountyPlateFinesCombiner extends Combiner<String, Map<String, Integer>> {
+    private static class CountyPlateFinesCombiner extends Combiner<PlateInfractions, PlateInfractions> {
 
-        private Map<String, Integer> countMap = new HashMap<>();
+        private String plate;
+        private String county;
+        private int count;
 
-        @Override
-        public void combine(String plate) {
-            countMap.put(plate, countMap.getOrDefault(plate, 0) + 1);
+        public CountyPlateFinesCombiner(Pair<String,String> countyPlate) {
+            county = countyPlate.first();
+            plate = countyPlate.second();
+            count = 0;
         }
 
         @Override
-        public Map<String, Integer> finalizeChunk() {
-            return Map.copyOf(countMap);
+        public void combine(PlateInfractions value) {
+            count += value.getInfractions();
+        }
+
+        @Override
+        public PlateInfractions finalizeChunk() {
+            return new PlateInfractions(plate, count, county);
         }
 
         @Override
         public void reset() {
-            countMap.clear();
+            count = 0;
         }
     }
 }

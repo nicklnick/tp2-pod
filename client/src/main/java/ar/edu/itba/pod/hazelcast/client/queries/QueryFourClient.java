@@ -47,8 +47,6 @@ public class QueryFourClient extends QueryClient<String, PlateInfractions>  {
 
         System.out.println(HEADER);
         resultMap.entrySet()
-                 .stream()
-                 .sorted(Map.Entry.comparingByKey())
                  .forEach(entry -> {
                      System.out.println(entry.getKey() + ";" + entry.getValue().getPlate() + ";" + entry.getValue().getInfractions());
                         rows.add(new String[]{entry.getKey(), entry.getValue().getPlate(), String.valueOf(entry.getValue().getInfractions())});
