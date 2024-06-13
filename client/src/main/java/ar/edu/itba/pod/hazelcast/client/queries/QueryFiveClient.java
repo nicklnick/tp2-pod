@@ -12,7 +12,6 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
     public QueryFiveClient() {
         super(List.of());
         CsvFileWriter.writeRows(System.getProperty(ArgumentUtils.OUT_PATH) + "/time5.txt", rows);
-        System.exit(0);
     }
 
     public static void main(String[] args) {
@@ -60,5 +59,6 @@ public class QueryFiveClient extends QueryClient<String, Integer> {
         );
         String outFile = System.getProperty(ArgumentUtils.OUT_PATH) + "/query5" + ".csv";
         CsvFileWriter.writeRows(outFile, rows);
+        writePerformance(System.getProperty(ArgumentUtils.OUT_PATH) + "/time5" + ".txt");
     }
 }

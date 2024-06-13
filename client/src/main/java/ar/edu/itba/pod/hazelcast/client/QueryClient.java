@@ -13,15 +13,20 @@ import com.hazelcast.core.HazelcastInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class QueryClient<K, V> {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryClient.class);
     protected final List<String[] > rows = new ArrayList<>();
+    protected final Map<String,Double> performanceRows  = new HashMap<>();
 
     private final List<String> arguments = new ArrayList<>(List.of(
             ArgumentUtils.ADDRESSES,
@@ -57,7 +62,9 @@ public abstract class QueryClient<K, V> {
             loadData(System.getProperty(ArgumentUtils.IN_PATH));
 
             dataLoadingDuration = stopwatch.reset();
-            rows.add(new String[]{"Stopwatch Data Loading Duration:", String.valueOf(dataLoadingDuration)});
+            rows.add(new String[]{"Stopwatch Data Loading Duration: " + dataLoadingDuration});
+            performanceRows.put("loading" ,dataLoadingDuration);
+
             LOGGER.info("Finished loading data ...");
             rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Finished loading data ..."});
 
@@ -74,7 +81,9 @@ public abstract class QueryClient<K, V> {
             queryDuration = stopwatch.stop();
             LOGGER.info("Results written");
             rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Results written"});
-            rows.add(new String[]{"Stopwatch Query Duration:", String.valueOf(queryDuration)});
+
+            rows.add(new String[]{"Stopwatch Query Duration: " + queryDuration});
+            performanceRows.put("query" ,queryDuration);
 
             LOGGER.info("Clearing data ...");
             rows.add(new String[]{ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")) + " INFO" + " - Clearing data ..."});
@@ -143,4 +152,19 @@ public abstract class QueryClient<K, V> {
                 throw new IllegalArgumentException("Argument " + argument + " is required");
     }
 
+    protected void writePerformance(String outFile){
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outFile))) {
+            for (String[] row : rows) {
+                String line = row[0];
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Map<String,Double> getPerformanceRows() {
+        return performanceRows;
+    }
 }
