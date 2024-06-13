@@ -5,6 +5,8 @@ import ar.edu.itba.pod.hazelcast.client.util.ArgumentUtils;
 import ar.edu.itba.pod.hazelcast.file.CsvFileWriter;
 import ar.edu.itba.pod.hazelcast.models.PlateInfractions;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,10 @@ public class QueryFourClient extends QueryClient<String, PlateInfractions>  {
 
     @Override
     public void loadData(String dirPath) {
-        getCityData().getCsvLoader().loadQueryFour(getHazelcastInstance(), dirPath);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate from = LocalDate.parse(System.getProperty(ArgumentUtils.FROM_DATE), formatter);
+        LocalDate to = LocalDate.parse(System.getProperty(ArgumentUtils.TO_DATE), formatter);
+        getCityData().getCsvLoader().loadQueryFour(getHazelcastInstance(), dirPath, from, to);
     }
 
     @Override

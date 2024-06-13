@@ -8,6 +8,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MultiMap;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -44,30 +46,14 @@ public enum CityCsvLoader {
         }
 
         @Override
-        public void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath) {
-            //loadQueryTwo(hazelcastInstance, dirPath);
-
-
-            // TODO: Filter by date
-
+        public void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath, LocalDate from, LocalDate to) {
             final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.NYC.getTicketsFile());
 
-            //SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
             CsvFileReader.readRows(tickets, line -> {
                 final Ticket ticket = Ticket.fromTicketNycCsv(line);
-
-                /*
-                try {
-                    Date issueDate = sdf.parse(ticket.getIssueDate());
-                    if (!issueDate.before() && !issueDate.after()) {
-                    */
-                        mm.put(ticket.getCountyName(), ticket);
-                    /*}
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException(e);
-                }*/
+                if(!ticket.getIssueDate().isBefore(from.atStartOfDay()) && ticket.getIssueDate().isBefore(to.plusDays(1).atStartOfDay()))
+                    mm.put(ticket.getCountyName(), ticket);
             });
         }
 
@@ -107,30 +93,15 @@ public enum CityCsvLoader {
         }
 
         @Override
-        public void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath) {
-            loadQueryTwo(hazelcastInstance, dirPath);
-
-            /*
-            // TODO: Filter by date
-            CHI.loadInfractions(hazelcastInstance, dirPath, CityData.CHI);
-
-            final MultiMap<String, TicketChi> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
+        public void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath, LocalDate from, LocalDate to) {
+            final MultiMap<String, Ticket> mm = hazelcastInstance.getMultiMap(CredentialUtils.GROUP_NAME);
             final String tickets = String.join(FileUtils.DELIMITER, dirPath, CityData.CHI.getTicketsFile());
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-            CsvFileReader.batchReadRows(tickets, lines -> lines.parallelStream().forEach(line -> {
-                final TicketChi ticket = TicketChi.fromTicketChiCsv(line);
-                try {
-                    Date issueDate = sdf.parse(ticket.getIssueDate());
-                    if (!issueDate.before() && !issueDate.after()) {
-                        mm.put(ticket.getCountyName(), ticket);
-                    }
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException(e);
-                }
-            }));
-            */
+            CsvFileReader.readRows(tickets, line -> {
+                final Ticket ticket = Ticket.fromTicketChiCsv(line);
+                if(!ticket.getIssueDate().isBefore(from.atStartOfDay()) && ticket.getIssueDate().isBefore(to.plusDays(1).atStartOfDay()))
+                    mm.put(ticket.getCountyName(), ticket);
+            });
         }
 
         @Override
@@ -215,6 +186,6 @@ public enum CityCsvLoader {
     public abstract void loadQueryOne(HazelcastInstance hazelcastInstance, String dirPath);
     public abstract void loadQueryTwo(HazelcastInstance hazelcastInstance, String dirPath);
     public abstract void loadQueryThree(HazelcastInstance hazelcastInstance, String dirPath);
-    public abstract void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath);
+    public abstract void loadQueryFour(HazelcastInstance hazelcastInstance, String dirPath, LocalDate from, LocalDate to);
     public abstract void loadQueryFive(HazelcastInstance hazelcastInstance, String dirPath);
 }

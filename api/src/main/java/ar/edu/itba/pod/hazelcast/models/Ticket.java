@@ -5,9 +5,12 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Ticket implements DataSerializable {
-    private String issueDate;
+    private LocalDateTime issueDate;
     private String plate;
     private String code;
     private String issuingAgency;
@@ -18,7 +21,7 @@ public class Ticket implements DataSerializable {
         // for Hazelcast
     }
 
-    public Ticket(String issueDate,
+    public Ticket(LocalDateTime issueDate,
                  String plate,
                  String code,
                  String issuingAgency,
@@ -35,7 +38,7 @@ public class Ticket implements DataSerializable {
 
     public static Ticket fromTicketChiCsv(String[] line) {
         return new Ticket(
-                line[0],
+                LocalDateTime.parse(line[0], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                 line[1],
                 line[2],
                 line[3],
@@ -46,7 +49,7 @@ public class Ticket implements DataSerializable {
 
     public static Ticket fromTicketNycCsv(String[] line) {
         return new Ticket(
-                line[1],
+                LocalDate.parse(line[1], DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay(),
                 line[0],
                 line[2],
                 line[5],
@@ -57,7 +60,7 @@ public class Ticket implements DataSerializable {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeUTF(issueDate);
+        out.writeUTF(issueDate.toString());
         out.writeUTF(plate);
         out.writeUTF(code);
         out.writeUTF(issuingAgency);
@@ -67,7 +70,7 @@ public class Ticket implements DataSerializable {
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        issueDate = in.readUTF();
+        issueDate = LocalDateTime.parse(in.readUTF());
         plate = in.readUTF();
         code = in.readUTF();
         issuingAgency = in.readUTF();
@@ -91,7 +94,7 @@ public class Ticket implements DataSerializable {
         return plate;
     }
 
-    public String getIssueDate() {
+    public LocalDateTime getIssueDate() {
         return issueDate;
     }
 
